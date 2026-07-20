@@ -15,6 +15,8 @@ Running the full **GLM-5.2** (≈744B total / ≈40B active MoE, DeepSeek Sparse
 > best publicly reported 4×-Spark GLM-5.2 numbers (which *pruned* the model to get there). The enabler
 > is an **NVFP4 368-byte compact KV cache** (58% of FP8) + B12X sparse-MLA + MTP-5 speculative decode.
 
+📄 **Model card / write-up on HuggingFace:** https://huggingface.co/0xdfi/GLM-5.2-1M-context-NVFP4-4x-DGX-Spark
+
 ---
 
 ## 1. What makes it fit and run
