@@ -73,6 +73,10 @@ docker exec -d \
   -e NCCL_MAX_NCHANNELS="${NCCL_MAX_NCHANNELS}" -e NCCL_MIN_NCHANNELS="${NCCL_MAX_NCHANNELS}" \
   -e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True -e VLLM_WORKER_MULTIPROC_METHOD=spawn \
   -e VLLM_USE_FLASHINFER_SAMPLER=1 -e VLLM_USE_V2_MODEL_RUNNER=1 -e VLLM_USE_B12X_SPARSE_INDEXER=1 \
+  -e VLLM_MARLIN_USE_ATOMIC_ADD=1 \
+  `# ^ Marlin MoE atomic-add — proven-kept speed lever (credit: tonyd2wild Speed-Night 2).` \
+  `# Capture-size lever: for concurrency (MAX_NUM_SEQS>1), align --max-cudagraph-capture-size to a` \
+  `# multiple of (num_speculative_tokens+1)=6 that covers MAX_NUM_SEQS*6, else cN decode runs piecewise.` \
   -e VLLM_ENABLE_PCIE_ALLREDUCE=0 -e USES_B12X=True -e RAY_ADDRESS="${HEAD_IP}:${RAY_PORT}" \
   "${HEAD_NAME}" bash -lc "${launch}"
 echo "Started DCP2/NVFP4 serve: ctx=${MAX_MODEL_LEN} kvbytes=${KV_CACHE_MEMORY_BYTES} graphs=${CUDAGRAPH} batch=${MAX_NUM_BATCHED_TOKENS}"
