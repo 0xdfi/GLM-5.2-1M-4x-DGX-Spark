@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="topology-prefill-chart.png" alt="GLM-5.2 on 4× DGX Spark — prefill speed, max context, and peak decode by DCP topology" width="720">
+</p>
+
 # GLM-5.2 (744B) at 1M context on 4× DGX Spark — NVFP4 compact-KV recipe
 
 > ## ✅ Status: v1 — tested & stable
