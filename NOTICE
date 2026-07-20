@@ -1,0 +1,65 @@
+GLM-5.2 (744B) at 1M context on 4x DGX Spark — NVFP4 compact-KV recipe
+Copyright (c) 2026 0xdfi
+
+Licensed under the Apache License, Version 2.0.
+
+This work stands on, and derives from, a chain of open community work. It would
+not exist without the people below. Where our recipe uses their kernels, mods,
+serve tuning, or findings, credit is theirs; errors are ours.
+
+FOUNDATIONAL
+
+1. CosmicRaisins (https://github.com/CosmicRaisins/glm-5.2-gb10) — authored the
+   sm_121 sparse-MLA port and the 10 Triton kernels the entire GLM-5.2-on-GB10
+   stack depends on, and the original launch.sh this recipe's serve lineage
+   descends from. Apache-2.0.
+
+2. QuantTrio (https://huggingface.co/QuantTrio) — the GLM-5.2-Int4-Int8Mix
+   checkpoint we serve (unpruned). Not redistributed here.
+
+3. zai-org — GLM-5.2 (the base model and its native MTP / DeepSeek Sparse
+   Attention + MLA architecture).
+
+RECIPE, MODS, AND SERVE TUNING
+
+4. tonyd2wild (https://github.com/tonyd2wild/GLM-5.2-QuantTrio-200K-4x-DGX-Spark--36tok-s)
+   — the 200K unpruned QuantTrio recipe and the "Speed-Night" optimization audit
+   we verified our config against: MTP k=5, cudagraph capture-size alignment to
+   (k+1), VLLM_MARLIN_USE_ATOMIC_ADD, and the step-time-overhead decomposition
+   (63% of each decode step is collective/launch overhead). Apache-2.0.
+
+5. ciprianveg — the sparse build mods (glm52-sparse.zip, NVIDIA forum 374125 #34)
+   and serve tuning (#107).
+
+6. Zatz — the unpruned QuantTrio serve recipe tuning (forum 374125 #57/#84).
+
+7. back199640 — serve configuration tuning (forum 374125 #80/#89).
+
+8. eugr (https://github.com/eugr/spark-vllm-docker) — the spark-vllm-docker build
+   harness for GB10.
+
+9. p33zy — alternative NVFP4 quantization path and hardware-acceleration
+   trade-off analysis (forum 374125).
+
+10. aidendle94 — GB10 container/image resources (forum 374125).
+
+11. drowzeys — the GLM-5.2 DFlash / abliterated recipe
+    (github.com/drowzeys/...), which we evaluated (read-only) for our v2
+    drafter analysis. We do not use its image, scripts, or weights.
+
+12. jasl — vLLM #41834 (FlashInfer 0.6.14 sparse-MLA path), a v2 prefill/decode
+    roadmap lever.
+
+13. NVIDIA developer forum thread 374125 participants collectively:
+    https://forums.developer.nvidia.com/t/glm-5-2-on-a-4x-gb10-cluster-22-tok-s-decode-256k-ctx-recipe/374125
+
+14. UCloud (GLM-5.2 DFlash draft) and Red Hat AI (GLM-5.2 DSpark speculator,
+    RedHatAI/GLM-5.2-speculator.dspark) — evaluated as v2/v2.5 drafter options.
+
+15. The vLLM project (https://github.com/vllm-project/vllm) — the serving engine
+    this fork is built on (base commit e232d262).
+
+Our own contribution on top of the above: the NVFP4 368-byte DS-MLA compact KV
+cache path, the DCP 1/2/4 speed↔context topology characterization to 1M, the
+indexer fold_indices ceiling analysis, and the honest live-logged benchmark
+methodology. See README.md and FINDINGS.md.

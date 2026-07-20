@@ -154,11 +154,27 @@ High-acceptance content (repetitive output) → peak; adversarial content (multi
 
 ## Roadmap
 
-- **v2 (exploring):** rebase the NVFP4/B12X/MTP enhancements onto latest vLLM; evaluate DFlash/DSpark
-  drafters. Note: our measurements suggest a better drafter helps at short context but converges to the
-  indexer-bound ceiling (~30 tok/s) at the 64K–1M depths this recipe targets — to be validated.
+- **v2:** rebase the NVFP4/B12X/MTP + DCP/1M-context enhancements onto latest vLLM (validated feasible —
+  community "0.23"/"0.25.1" builds run GLM-5.2 + B12X on GB10), picking up SM121 kernel fixes and the
+  FlashInfer 0.6.14 sparse-MLA prefill lever (jasl, vLLM #41834: ~1757 prefill on 2× GB10).
+- **v2.5:** build DSpark speculator support into the rebased engine.
+- **Drafter note:** a better drafter (DFlash/DSpark) helps at short context but converges to the
+  indexer/collective-bound ceiling (~30 tok/s) at the 64K–1M depths this recipe targets. Independently
+  confirmed by tonyd2wild (DFlash ties MTP at ~42 single-stream and *costs* context) and our own DSpark
+  physics analysis. The real ceiling lever is per-step collective overhead (63% of each decode step),
+  not the drafter.
+- **Speed-lever audit (vs tonyd2wild's Speed-Night findings):** this recipe already uses MTP k=5. Two
+  proven cheap levers to fold in — cudagraph capture-sizes aligned to (k+1) and `VLLM_MARLIN_USE_ATOMIC_ADD=1`.
+
+## Acknowledgments
+
+This recipe stands on open community work — most of all **CosmicRaisins** (the sm_121 sparse-MLA port
+and Triton kernels the whole stack depends on), **tonyd2wild** (the 200K recipe + Speed-Night optimization
+audit), **QuantTrio** (the checkpoint), **ciprianveg / Zatz / back199640 / p33zy / aidendle94 / eugr**
+(mods, serve tuning, and the GB10 build harness), and the **NVIDIA developer forum thread 374125**
+community. Full attribution in [`NOTICE`](NOTICE). Thank you.
 
 ---
 
 *Measured 2026-07-20 on 4× DGX Spark / GB10 sm_121a. Model: GLM-5.2 (zai-org / QuantTrio quant).
-Everything above is read from the live engine, not modeled. MIT license — reproduce and improve.*
+Everything above is read from the live engine, not modeled. Apache-2.0 licensed — reproduce and improve.*
