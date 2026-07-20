@@ -54,6 +54,19 @@ Running the full **GLM-5.2** (≈744B total / ≈40B active MoE, DeepSeek Sparse
 - **vs the community:** best public 4× GB10 GLM-5.2 report is ~20–22 tok/s single-stream — and that
   run *pruned* the model to 218 experts. This runs **unpruned** at 22 floor / 42 peak.
 
+**Concurrency (v1.1 — multi-user aggregate throughput, DCP1/100K, `MAX_NUM_SEQS=4`, live-measured):**
+
+| Concurrency | Aggregate decode tok/s | Per-stream | Notes |
+|---|---|---|---|
+| c1 | 42.2 | 42.2 | single-stream = peak |
+| c2 | 51.1 | 25.6 | |
+| **c4** | **103.7** | 25.9 | **~2.5× aggregate; serves 4 users at once** |
+
+Enabled by three concurrency fixes: (1) `MAX_NUM_SEQS=4`, (2) cudagraph capture-size raised to **24** so
+the c4 decode batch `4×(k+1)` gets a full graph (else it runs piecewise — credit: tonyd2wild Speed-Night),
+(3) the **DSA-indexer MTP-overhang patch** ([`patches/fix-indexer-mtp-overhang.py`](patches/fix-indexer-mtp-overhang.py),
+credit tonyd2wild) — required for ≥3 concurrent requests when `max_model_len` is a multiple of `block_size`.
+
 ---
 
 ## 3. Three production topologies (speed-first: full CUDA graphs at every level)
@@ -107,6 +120,10 @@ python3 -m vllm.entrypoints.openai.api_server \
 (set `DCP_SIZE=1|2|4`, `MAX_MODEL_LEN`, `KV_CACHE_MEMORY_BYTES`, `MAX_NUM_SEQS`). Use batch 512 at 1M to
 keep the indexer scratch in budget (see §5.1).
 
+**Concurrency serving (v1.1):** apply [`patches/fix-indexer-mtp-overhang.py`](patches/fix-indexer-mtp-overhang.py)
+in-container once, then launch with `MAX_NUM_SEQS=4 CUDAGRAPH=24` (capture size ≥ `MAX_NUM_SEQS*(k+1)`).
+`VLLM_MARLIN_USE_ATOMIC_ADD=1` is already default in the launcher. Measured: c4 = 103.7 tok/s aggregate.
+
 ---
 
 ## 5. Engineering discoveries (the non-obvious stuff)
@@ -142,7 +159,8 @@ High-acceptance content (repetitive output) → peak; adversarial content (multi
 
 ## 7. Honest limitations
 
-- **Single-stream, small-batch numbers.** This is a latency/context recipe, not a throughput-serving one.
+- **Latency/context first, but concurrency-capable.** Single-stream tops out ~42; multi-user aggregate
+  scales to ~104 tok/s at c4 (see §2). Per-stream drops under load (~26) — expected TP contention.
 - **Decode is modest by datacenter standards** (~22–42 tok/s) — that's Spark's ~273 GB/s bus, not the
   stack. For raw tok/s, Spark is the wrong tool; for 1M context on cheap silicon, it's remarkable.
 - **Custom fork required.** Stock/nightly vLLM does not support 744B MoE at 1M ctx on `sm_121a` today
