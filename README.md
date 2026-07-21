@@ -191,6 +191,30 @@ keep the indexer scratch in budget (see §5.1).
 in-container once, then launch with `MAX_NUM_SEQS=4 CUDAGRAPH=24` (capture size ≥ `MAX_NUM_SEQS*(k+1)`).
 `VLLM_MARLIN_USE_ATOMIC_ADD=1` is already default in the launcher. Measured: c4 = 103.7 tok/s aggregate.
 
+### Prefix caching — repeated prefixes skip prefill (ON by default, v1.2)
+
+Automatic prefix caching (APC) is **enabled by default** in the launcher (`ENABLE_PREFIX_CACHING=1`).
+Requests that share a leading prefix — multi-turn chat re-sending history, a shared system prompt across
+users, the same document re-queried — **reuse cached KV and skip prefill** for the shared span.
+
+**Measured on the live rig** (DCP2, identical ~25.6K-token prompt sent twice, single stream):
+
+| | 1st request (cold) | 2nd request (cache hit) |
+|---|---|---|
+| Latency | 45.9 s | **0.78 s** (≈59× faster) |
+| Output | `Report` | `Report` (byte-identical) |
+
+Since prefill is the slow stage (~410–614 tok/s), each hit saves ≈ **2 s per 1,000 cached prefix tokens**.
+It helps most when the *varying* text is at the **end** of the prompt (shared prefix first); it does nothing
+for all-unique prompts or when the variable text leads.
+
+**Safe on this stack.** Verified correct with `B12X_MLA_SPARSE` + `nvfp4_ds_mla` + DCP2 + MTP-5: the sparse
+indexer's key-cache is APC-tracked at the same block size, and top-k is recomputed each step, so reused
+blocks stay consistent. APC does **not** raise peak KV memory (cached blocks are LRU-evictable) — it does
+**not** move the OOM edge. Set `ENABLE_PREFIX_CACHING=0` only for clean prefill benchmarking. Caveat: on a
+tight KV pool under heavy concurrent large-context load, cached prefixes can be evicted before reuse (hit
+rate drops, no correctness impact) — a larger pool improves cache effectiveness.
+
 ---
 
 ## 5. Engineering discoveries (the non-obvious stuff)
