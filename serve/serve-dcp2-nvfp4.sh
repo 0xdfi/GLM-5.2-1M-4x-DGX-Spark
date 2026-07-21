@@ -76,6 +76,9 @@ docker exec -d \
   -e VLLM_MARLIN_USE_ATOMIC_ADD=1 \
   -e VLLM_SPARSE_INDEXER_MAX_LOGITS_MB="${SPARSE_LOGITS_MB:-256}" \
   -e GLM52_PAGED_MQA_TOPK_CHUNK_SIZE="${TOPK_CHUNK:-8192}" \
+  `# NOTE: do NOT enable GLM52_PAGED_MQA_TRITON / GLM52_MQA_LOGITS_TRITON / GLM52_B12X_MLA here —` \
+  `# tested 2026-07-21: they REGRESS decode (26.5 -> 7.9 @128K) on our image, which lacks the` \
+  `# patched sparse_attn_indexer + tuned Triton kernels those flags assume. Our default path is faster.` \
   `# ^ sparse-indexer per-step cost caps (credit: XanuNetworks) — chunk the topk scan +` \
   `# cap logits memory so decode does not crawl O(context) at depth.` \
   `# ^ Marlin MoE atomic-add — proven-kept speed lever (credit: tonyd2wild Speed-Night 2).` \
