@@ -10,6 +10,52 @@
 > number below is read from **vLLM's own engine logger on the live rig** — nothing modeled, nothing
 > benchmark-gamed. The 1M-context topology (DCP4) is measured to load and serve at 1M with full CUDA graphs.
 
+## Pick your operating point — the context ↔ speed sliding scale
+
+This model runs on a **sliding scale**: you trade **total context** against **speed**. Choose in two steps —
+first a **DCP topology** (context depth vs decode speed), then a **prefill batch** (prefill speed vs max
+context). Bigger context ⇒ slower; faster ⇒ less context. All numbers measured on the live rig, full CUDA
+graphs, seqs=1, no swap / no NVMe thrash. `~` = estimated (interpolated between measured points).
+
+**① Choose a topology:**
+
+| DCP | Max context | Peak decode | Fastest prefill | Best for |
+|---|---|---|---|---|
+| **DCP1** | 375K | **~42 tok/s** | ~820 tok/s | maximum speed |
+| **DCP2** | 625K | ~37 tok/s | 746 tok/s | balance |
+| **DCP4** | **1M** | ~38 (short) / ~30 (deep) | 614 tok/s | maximum context |
+
+**② Then choose a prefill batch — bigger batch = faster prefill but less max context** (indexer scratch = context × batch):
+
+**DCP1 (fastest):**
+| Batch | Max context | Prefill |
+|---|---|---|
+| **512** | **375K** | **614 tok/s** |
+| 1024 | ~250K | ~700 tok/s |
+| **2048** | ~130K | **~820 tok/s** |
+
+**DCP2 (balanced):**
+| Batch | Max context | Prefill |
+|---|---|---|
+| **512** | **625K** | **512 tok/s** |
+| 1024 | ~420K | ~630 tok/s |
+| **2048** | ~250K | **746 tok/s** |
+
+**DCP4 (max context):**
+| Batch | Max context | Prefill |
+|---|---|---|
+| **512** | **1M** | **410 tok/s** |
+| 1024 | ~700K | ~510 tok/s |
+| **2048** | ~450K | **614 tok/s** |
+
+**Bold = measured.** Batch-512 max-context and batch-512/2048 prefill are measured live; batch-1024 and
+the batch-2048 max-context are interpolated estimates (`~`). Decode is **batch-independent** (~42/37/38 at
+full MTP acceptance). Batch 4096 is possible but OOM-prone at depth — that's what crashed our old speed config.
+
+**TL;DR for picking:** want the deepest context → DCP4, batch 512 (1M @ ~410 prefill). Want the fastest
+interactive experience → DCP1, batch 2048 (~130K @ ~820 prefill, ~42 decode). Want a middle ground →
+DCP2, batch 512 (625K @ ~512 prefill, ~37 decode).
+
 Running the full **GLM-5.2** (≈744B total / ≈40B active MoE, DeepSeek Sparse Attention + MLA,
 1,024K native context) on a **desk cluster of 4× NVIDIA DGX Spark** (GB10 Grace-Blackwell,
 `sm_121a`, 128 GB unified LPDDR5X @ ~273 GB/s each), **unpruned**, over RoCE — with measured, honest numbers.
@@ -92,48 +138,6 @@ is a clean boot that stays up: DCP1 hangs at 400K, DCP2 crashes at 700K, DCP4 lo
 index-cache, which is NOT sharded by DCP** — so max context scales *sub-linearly* (375K→625K→1M ≈ 1.6× per
 DCP doubling, not 2×). Per-token KV still halves with each DCP doubling; the DCP collective tax on decode
 is real (more sharding = slower decode). Pick your point on the speed↔context curve.
-
-### 3a. Operating-point matrix — batch × context × speed (measured 2026-07-20)
-
-Speed and context are governed by **two independent knobs**, and it's crucial to understand they trade
-against each other:
-
-- **`max-num-batched-tokens` (prefill batch):** bigger batch → faster prefill, but **lower max context**
-  (the sparse-indexer scratch = `context × batch`, so big batch eats the memory context needs).
-  Prefill scales *sub-linearly* with batch (~1.3× for 4× the batch — it's compute-bound on the MoE GEMMs).
-- **DCP level:** more sharding → **slower** prefill *and* decode (cross-node collective tax) but **higher
-  max context** (KV is sharded). DCP1 has no cross-node collective, so it's fastest but lowest-context.
-
-**Decode is independent of batch** — it processes `k+1` tokens/step regardless of prefill batch. Decode
-speed = `acceptance × forward-rate`, where forward-rate is set by the DCP collective tax (DCP1 ~7.1/s,
-DCP2/DCP4 ~6.2/s). At full MTP acceptance (~6): **DCP1 ≈ 42, DCP2 ≈ 37, DCP4 ≈ 38 tok/s.**
-
-**Prefill (tok/s), measured at 150K context, full graphs, seqs=1:**
-
-| DCP | batch 512 | batch 2048 |
-|---|---|---|
-| **DCP1** | 614 | ~820 |
-| **DCP2** | 512 | 746 |
-| **DCP4** | 410 | 614 |
-
-**Max single-stream context (full CUDA graphs) — the batch↔context trade, per DCP:**
-
-| DCP | @ batch 512 (measured) | @ batch 2048 (est.) | peak decode | hardened in-use* |
-|---|---|---|---|---|
-| **DCP1 — fastest** | **375K** | ~130K | ~42 | ~340K |
-| **DCP2 — balanced** | **625K** | ~250K | ~37 | ~560K |
-| **DCP4 — max ctx** | **1M** | ~450K | ~38 short / ~30 deep | ~900K |
-
-\* *hardened in-use = ~10% below the clean-boot OOM edge, to leave runtime headroom for a full-context
-request (loading ≠ safe under load). Boot edges verified; a full-context stress test is the final gate
-before calling these production-hardened.* All maxes are single-stream (seqs=1); concurrency shares the
-same KV pool, so more users = less context each. **No swap / no NVMe thrash at any of these points
-(swap is 0 bytes on all nodes; NVMe reads ~0 during decode).**
-
-**How to read it:** want fast prefill → big batch, but you give up context (that's what OOM'd the old
-`speed256k` config: batch 4096 at 256K). Want max context → small batch (512), slower prefill. Want max
-decode → DCP1 at low context. Want 1M → DCP4, accept ~410 prefill and ~30–38 decode. There is no single
-"fastest" config — it's a point you choose on these axes.
 
 ---
 
