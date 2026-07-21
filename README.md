@@ -8,7 +8,7 @@
 > This is a **working, verified deployment**, not a proposal. The shipping config (DCP1 / 100K)
 > runs live on a 4× DGX Spark cluster, produces **correct output** (verified), and every performance
 > number below is read from **vLLM's own engine logger on the live rig** — nothing modeled, nothing
-> benchmark-gamed. The 1M-context topology (DCP4) is confirmed to load and serve at 813K–1.06M.
+> benchmark-gamed. The 1M-context topology (DCP4) is measured to load and serve at 1M with full CUDA graphs.
 
 Running the full **GLM-5.2** (≈744B total / ≈40B active MoE, DeepSeek Sparse Attention + MLA,
 1,024K native context) on a **desk cluster of 4× NVIDIA DGX Spark** (GB10 Grace-Blackwell,
@@ -80,15 +80,18 @@ credit tonyd2wild) — required for ≥3 concurrent requests when `max_model_len
 Design rule: **full CUDA graphs are mandatory** (decode-speed requirement); each topology's
 production context = the max that still fits full graphs. 1M is a target, never at the cost of speed.
 
-| Topology | per-token KV | Max ctx w/ full graphs | Peak decode | Use |
+| Topology | per-token KV | Max ctx w/ full graphs (measured) | Peak decode | Use |
 |---|---|---|---|---|
-| **DCP1 — fastest** | 31,976 B | ~100–200K | ~42 tok/s | speed |
-| **DCP2 — balanced** | 15,988 B | ~400–480K | ~32 tok/s | balance |
-| **DCP4 — max context** | 7,994 B | **813K → 1.06M** | ~27–32 tok/s | 1M context |
+| **DCP1 — fastest** | 31,976 B | **375K** | ~42 tok/s | speed |
+| **DCP2 — balanced** | 15,988 B | **625K** | ~32 tok/s | balance |
+| **DCP4 — max context** | 7,994 B | **1M** ✅ | ~27–32 tok/s | 1M context |
 
-Per-token KV halves with each DCP doubling; the DCP collective tax on decode is real and inherent
-(more sharding = more per-step all-gather/reduce-scatter = slower decode). Pick your point on the
-speed↔context curve.
+**Max ctx = measured single-stream safe max (seqs=1, full CUDA graphs), verified 2026-07-20.** The edge
+is a clean boot that stays up: DCP1 hangs at 400K, DCP2 crashes at 700K, DCP4 loads and serves at 1M
+(verified — no swap, no NVMe thrash, memory stable under decode). The real ceiling driver is the **sparse
+index-cache, which is NOT sharded by DCP** — so max context scales *sub-linearly* (375K→625K→1M ≈ 1.6× per
+DCP doubling, not 2×). Per-token KV still halves with each DCP doubling; the DCP collective tax on decode
+is real (more sharding = slower decode). Pick your point on the speed↔context curve.
 
 ---
 

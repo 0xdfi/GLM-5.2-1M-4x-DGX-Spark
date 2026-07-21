@@ -69,9 +69,16 @@ so max-context-with-graphs scales inversely with per-token KV):
 
 | Option | per-token KV | Max ctx WITH full graphs | Peak decode | Floor | Confirmed |
 |---|---|---|---|---|---|
-| **DCP1 (fastest)** | 31,976 B | ~200-220K | ~40 (no DCP collective) | — | to re-measure (was under-set at 156K) |
-| **DCP2 (balanced)** | 15,988 B | ~400K | ~32 | — | measuring |
-| **DCP4 (max ctx)** | 7,994 B | **813K** | ~32 | 4.9 GB | ✓ CONFIRMED |
+| **DCP1 (fastest)** | 31,976 B | **375K** | ~42 peak | — | ✓ MEASURED 2026-07-20 (400K hangs) |
+| **DCP2 (balanced)** | 15,988 B | **625K** | ~32 | — | ✓ MEASURED (700K crashes, 750K hangs) |
+| **DCP4 (max ctx)** | 7,994 B | **1M** | ~27-32 | ~1.2 GB free | ✓ MEASURED w/ full graphs (no swap/thrash) |
+
+**Max-context correction (2026-07-20):** the earlier ~200K/400K/813K figures were computed as
+`KV_budget ÷ per-token-KV` — a KV-only model that ignored the **sparse index-cache + graph-capture
+memory** (~46 GB at 500K, measured), which is the actual ceiling driver and is **NOT sharded by DCP**.
+Re-measured to the real clean-boot edge with full graphs, seqs=1. All three were understated. Context
+scales sub-linearly with DCP (375K→625K→1M ≈ 1.6×/doubling). Swap is OFF on all nodes and NVMe reads are
+~0 during decode at every max — no swap or SSD thrash. Failure modes at the edge: hang / worker-crash / OOM.
 
 Graphs beat eager on every axis except raw context: DCP4-800K-graphs (32 peak, 4.9GB floor) >
 DCP4-1M-eager (27 peak, 2.1GB floor). Note: graphs cut kernel-LAUNCH overhead (big win at low
