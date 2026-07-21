@@ -170,8 +170,15 @@ python3 -m vllm.entrypoints.openai.api_server \
 
 **Key per-worker env:**
 `CUTE_DSL_ARCH=sm_121a TORCH_CUDA_ARCH_LIST=12.1a VLLM_USE_B12X_SPARSE_INDEXER=1 USES_B12X=True`
-`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NCCL_IB_DISABLE=0` + dual-HCA
-`NCCL_IB_HCA=<hca0>,<hca1>`. Full parameterized launcher: [`serve/serve-dcp2-nvfp4.sh`](serve/serve-dcp2-nvfp4.sh)
+`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True NCCL_IB_DISABLE=0` + dual-HCA `NCCL_IB_HCA=<hca0>,<hca1>`.
+
+> ### ⚡ Deep-decode fix (MUST-HAVE): `VLLM_SPARSE_INDEXER_MAX_LOGITS_MB=256` + `GLM52_PAGED_MQA_TOPK_CHUNK_SIZE=8192`
+> Without these, the sparse indexer does an **O(context) topk scan per decode step**, so decode *crawls*
+> at depth (measured **15.7 tok/s @128K**). Setting them chunks the topk scan and caps its memory →
+> **26.5 tok/s @128K, +69%** (same acceptance) — decode holds at depth instead of crawling. Both are
+> now default in the launcher. Credit: [XanuNetworks](https://github.com/XanuNetworks/GLM-5.2-QuantTrio-DCP-4x-DGX-Spark)'s config surfaced these.
+
+Full parameterized launcher: [`serve/serve-dcp2-nvfp4.sh`](serve/serve-dcp2-nvfp4.sh)
 (set `DCP_SIZE=1|2|4`, `MAX_MODEL_LEN`, `KV_CACHE_MEMORY_BYTES`, `MAX_NUM_SEQS`). Use batch 512 at 1M to
 keep the indexer scratch in budget (see §5.1).
 
@@ -244,7 +251,8 @@ High-acceptance content (repetitive output) → peak; adversarial content (multi
 This recipe stands on open community work — most of all **CosmicRaisins** (the sm_121 sparse-MLA port
 and Triton kernels the whole stack depends on), **tonyd2wild** (the 200K recipe + Speed-Night optimization
 audit), **QuantTrio** (the checkpoint), **ciprianveg / Zatz / back199640 / p33zy / aidendle94 / eugr**
-(mods, serve tuning, and the GB10 build harness), and the **NVIDIA developer forum thread 374125**
+(mods, serve tuning, and the GB10 build harness), **XanuNetworks** (whose config surfaced the sparse-indexer
+deep-decode env vars — a +69% fix at depth), and the **NVIDIA developer forum thread 374125**
 community. Full attribution in [`NOTICE`](NOTICE). Thank you.
 
 ---

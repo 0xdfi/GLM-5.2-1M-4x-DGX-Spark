@@ -74,6 +74,10 @@ docker exec -d \
   -e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True -e VLLM_WORKER_MULTIPROC_METHOD=spawn \
   -e VLLM_USE_FLASHINFER_SAMPLER=1 -e VLLM_USE_V2_MODEL_RUNNER=1 -e VLLM_USE_B12X_SPARSE_INDEXER=1 \
   -e VLLM_MARLIN_USE_ATOMIC_ADD=1 \
+  -e VLLM_SPARSE_INDEXER_MAX_LOGITS_MB="${SPARSE_LOGITS_MB:-256}" \
+  -e GLM52_PAGED_MQA_TOPK_CHUNK_SIZE="${TOPK_CHUNK:-8192}" \
+  `# ^ sparse-indexer per-step cost caps (credit: XanuNetworks) — chunk the topk scan +` \
+  `# cap logits memory so decode does not crawl O(context) at depth.` \
   `# ^ Marlin MoE atomic-add — proven-kept speed lever (credit: tonyd2wild Speed-Night 2).` \
   `# Capture-size lever: for concurrency (MAX_NUM_SEQS>1), align --max-cudagraph-capture-size to a` \
   `# multiple of (num_speculative_tokens+1)=6 that covers MAX_NUM_SEQS*6, else cN decode runs piecewise.` \
