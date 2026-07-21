@@ -10,6 +10,11 @@
 > number below is read from **vLLM's own engine logger on the live rig** — nothing modeled, nothing
 > benchmark-gamed. The 1M-context topology (DCP4) is measured to load and serve at 1M with full CUDA graphs.
 
+> ⚠️ **Read before using the tables below.** The per-batch context/service sizes in these matrixes are
+> **estimates** — they have **not been tested in a production serving environment.** Treat them as starting
+> points, not guarantees. **Testing on your own hardware is strongly recommended to determine the real
+> limits**, which can vary between individual units (firmware, driver, and memory conditions).
+
 ## Pick your operating point — the context ↔ speed sliding scale
 
 This model runs on a **sliding scale**: you trade **total context** against **speed**. Choose in two steps —
