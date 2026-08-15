@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Render the deterministic public O14 profile chart (stdlib only)."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+SVG = '''<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">O14 public profiles</title>
+  <desc id="desc">O14 Fast is READY at 250K total KV. O14 Balanced is TESTING and must not be deployed at a 500K target.</desc>
+  <rect width="1200" height="620" rx="32" fill="#0b1020"/>
+  <text x="70" y="82" fill="#f8fafc" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700">O14 public profile index</text>
+  <text x="70" y="122" fill="#94a3b8" font-family="Arial, Helvetica, sans-serif" font-size="22">GLM-5.2 · 4× DGX Spark · total KV tokens</text>
+
+  <text x="70" y="210" fill="#f8fafc" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">O14 Fast</text>
+  <rect x="265" y="174" width="140" height="46" rx="23" fill="#166534"/>
+  <text x="335" y="205" text-anchor="middle" fill="#dcfce7" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700">READY</text>
+  <rect x="70" y="240" width="500" height="72" rx="16" fill="#22c55e"/>
+  <text x="95" y="286" fill="#052e16" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">250K total KV</text>
+  <text x="600" y="284" fill="#cbd5e1" font-family="Arial, Helvetica, sans-serif" font-size="24">TP4 / DCP1 / PP1 · deployable</text>
+
+  <text x="70" y="398" fill="#f8fafc" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">O14 Balanced</text>
+  <rect x="325" y="362" width="330" height="46" rx="23" fill="#92400e"/>
+  <text x="490" y="393" text-anchor="middle" fill="#fef3c7" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700">TESTING / DO NOT DEPLOY</text>
+  <rect x="70" y="428" width="1000" height="72" rx="16" fill="#f59e0b"/>
+  <text x="95" y="474" fill="#451a03" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">500K target</text>
+  <text x="600" y="472" fill="#451a03" font-family="Arial, Helvetica, sans-serif" font-size="24">TP4 / DCP2 / PP1 · speed TBD</text>
+
+  <line x1="70" y1="545" x2="1070" y2="545" stroke="#334155" stroke-width="2"/>
+  <text x="70" y="582" fill="#94a3b8" font-family="Arial, Helvetica, sans-serif" font-size="20">0</text>
+  <text x="545" y="582" fill="#94a3b8" font-family="Arial, Helvetica, sans-serif" font-size="20">250K</text>
+  <text x="1015" y="582" fill="#94a3b8" font-family="Arial, Helvetica, sans-serif" font-size="20">500K</text>
+</svg>
+'''
+
+
+def main() -> int:
+    root = Path(__file__).resolve().parents[1]
+    default_output = root / "profile-index-chart.svg"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=Path, default=default_output)
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+
+    if args.check:
+        if not args.output.is_file() or args.output.read_text(encoding="utf-8") != SVG:
+            raise SystemExit(f"chart drift: run {Path(__file__).name}")
+        print(f"chart deterministic: {args.output}")
+        return 0
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(SVG, encoding="utf-8")
+    print(args.output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

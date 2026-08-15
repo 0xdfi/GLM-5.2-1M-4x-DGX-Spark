@@ -1,0 +1,114 @@
+{
+  "schema": "glm52-o14-public-profile-index/1",
+  "updated": "2026-08-15",
+  "selector_policy": {
+    "deployable_statuses": [
+      "READY"
+    ],
+    "require_deployable_true": true,
+    "unknown_profile_action": "PLAN_ONLY",
+    "non_ready_action": "DO_NOT_PULL_BUILD_OR_DEPLOY",
+    "never_synthesize_image_tags": true
+  },
+  "canonical_harness": {
+    "repository": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark",
+    "main_url": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark/tree/main",
+    "fast_profile_commit": null,
+    "source_policy": "Use the canonical main URL until the immutable Fast profile commit is published; then replace fast_profile_commit with that exact commit.",
+    "model_weights_included": false
+  },
+  "profiles": {
+    "o14-fast": {
+      "display_name": "O14 Fast",
+      "status": "READY",
+      "deployable": true,
+      "topology": {
+        "tensor_parallel_size": 4,
+        "decode_context_parallel_size": 1,
+        "pipeline_parallel_size": 1
+      },
+      "capacity": {
+        "public_total_kv_label": "250K",
+        "display_total_kv_tokens": 250000,
+        "allocator_total_kv_tokens": 250023,
+        "kv_cache_memory_bytes_per_rank": 7995534848,
+        "max_model_len": 249000,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 2048
+      },
+      "source": {
+        "repository": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark",
+        "url": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark/tree/main",
+        "commit": null,
+        "dockerfile": "docker/Dockerfile.repro",
+        "checksum_manifest": "SHA256SUMS"
+      },
+      "image": {
+        "reference": null,
+        "digest": null,
+        "pull_action": "DO_NOT_PULL_BUILD_FROM_SOURCE"
+      },
+      "matched_speed": {
+        "fixture_set": "legacy-exp1-dcp1",
+        "prefill_tokens_per_second": 819,
+        "decode_peak_tokens_per_second": 42.3,
+        "deep_prompt_tokens": 53000,
+        "deep_decode_tokens_per_second_range": [
+          29,
+          33
+        ]
+      }
+    },
+    "o14-balanced": {
+      "display_name": "O14 Balanced",
+      "status": "TESTING",
+      "status_label": "TESTING / DO NOT DEPLOY",
+      "deployable": false,
+      "topology": {
+        "tensor_parallel_size": 4,
+        "decode_context_parallel_size": 2,
+        "pipeline_parallel_size": 1
+      },
+      "capacity": {
+        "public_total_kv_label": "500K target",
+        "target_total_kv_tokens": 500000,
+        "expected_allocator_total_kv_tokens": 500237,
+        "kv_cache_memory_bytes_per_rank": 8000000000,
+        "max_model_len": 490000,
+        "max_num_seqs": null,
+        "max_num_batched_tokens": null
+      },
+      "source": {
+        "repository": null,
+        "url": null,
+        "commit": null,
+        "dockerfile": null,
+        "checksum_manifest": null,
+        "required_after_acceptance": "Separate immutable DCP2 runtime source and reproducible recipe"
+      },
+      "image": {
+        "reference": null,
+        "digest": null,
+        "pull_action": "DO_NOT_PULL",
+        "separate_immutable_image_required_after_acceptance": true,
+        "must_not_overwrite_or_retag_profile": "o14-fast"
+      },
+      "matched_speed": {
+        "fixture_set": "legacy-exp1-dcp1",
+        "prefill_tokens_per_second": null,
+        "decode_peak_tokens_per_second": null,
+        "deep_prompt_tokens": null,
+        "deep_decode_tokens_per_second_range": null,
+        "status": "TBD_UNTIL_ACCEPTED_DCP2_RUNS_EXACT_DCP1_FIXTURES"
+      }
+    }
+  },
+  "legacy": {
+    "exp1": {
+      "selectable": false,
+      "documentation": "README.md#legacy-exp1",
+      "launcher": "serve/serve-dcp2-nvfp4.sh",
+      "warning": "Historical DCP1/DCP2/DCP4 evidence only; not named O14 profiles. DCP4 is not O14 High."
+    }
+  }
+}
