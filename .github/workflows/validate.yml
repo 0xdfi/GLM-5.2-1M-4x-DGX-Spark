@@ -1,0 +1,25 @@
+name: Validate public profiles
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate shell syntax
+        run: bash -n serve/serve-dcp2-nvfp4.sh
+      - name: Validate selector, privacy, and chart
+        run: python3 scripts/validate_profiles.py
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
