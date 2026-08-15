@@ -10,7 +10,7 @@ This repository is the public profile index for the O14 GLM-5.2 runtime. Machine
 
 | Profile | Status | Topology | Total KV | Deploy? | Runtime artifact |
 |---|---|---:|---:|---:|---|
-| **O14 Fast** | **READY** | TP4 / DCP1 / PP1 | **250K** | **Yes** | Build from the [canonical O14 Harness source](https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark/tree/main) |
+| **O14 Fast** | **READY** | TP4 / DCP1 / PP1 | **250K** | **Yes** | Build from the [pinned canonical O14 Harness source](https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark/tree/9ba54db8f7c852eabb90372f7dcf47f87eafbe20) |
 | **O14 Balanced** | **TESTING / DO NOT DEPLOY** | TP4 / DCP2 / PP1 | **500K target** | **No** | None; separate immutable runtime required after acceptance |
 
 ### Matched-speed results
@@ -35,7 +35,7 @@ Balanced speed remains `TBD` until the exact retained DCP1 fixture set is run ag
 | `MAX_NUM_BATCHED_TOKENS` | 2,048 |
 | Topology | TP4 / DCP1 / PP1 |
 
-The selector points to the canonical Harness `main` URL until its immutable named-profile commit is published. Consumers must resolve and record the exact source commit before building.
+The selector pins canonical Harness commit [`9ba54db8f7c852eabb90372f7dcf47f87eafbe20`](https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark/commit/9ba54db8f7c852eabb90372f7dcf47f87eafbe20), which contains the named Fast selector and exact recipe values.
 
 There is no published O14 Fast OCI image in phase 1. Do not invent or pull a Fast tag. Build from the pinned canonical source recipe and keep model weights outside the runtime image.
 

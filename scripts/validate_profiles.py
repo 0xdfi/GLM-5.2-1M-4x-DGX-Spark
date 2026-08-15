@@ -23,6 +23,7 @@ def require(condition: bool, message: str) -> None:
 def validate_selector() -> None:
     data = json.loads(SELECTOR.read_text(encoding="utf-8"))
     require(data["schema"] == "glm52-o14-public-profile-index/1", "unexpected schema")
+    require(data["canonical_harness"]["fast_profile_commit"] == "9ba54db8f7c852eabb90372f7dcf47f87eafbe20", "canonical Fast commit drift")
     require(set(data["profiles"]) == {"o14-fast", "o14-balanced"}, "unexpected selectable profile set")
 
     fast = data["profiles"]["o14-fast"]

@@ -22,12 +22,12 @@ MAX_NUM_SEQS=4
 MAX_NUM_BATCHED_TOKENS=2048
 ```
 
-The selector currently points to the canonical Harness `main` URL. When `canonical_harness.fast_profile_commit` becomes non-null, check out that exact commit; otherwise resolve and record the current `main` commit before building.
+The selector pins canonical Harness commit `9ba54db8f7c852eabb90372f7dcf47f87eafbe20`. Check out that exact commit before validating or building.
 
 ```bash
 git clone https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark.git
 cd GLM-5.2-Harness-O14-4x-DGX-Spark
-git checkout <resolved-main-or-selector-commit>
+git checkout 9ba54db8f7c852eabb90372f7dcf47f87eafbe20
 python3 scripts/validate.py
 python3 reproducibility/verify.py
 ```

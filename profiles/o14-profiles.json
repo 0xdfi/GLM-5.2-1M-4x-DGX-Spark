@@ -13,8 +13,8 @@
   "canonical_harness": {
     "repository": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark",
     "main_url": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark/tree/main",
-    "fast_profile_commit": null,
-    "source_policy": "Use the canonical main URL until the immutable Fast profile commit is published; then replace fast_profile_commit with that exact commit.",
+    "fast_profile_commit": "9ba54db8f7c852eabb90372f7dcf47f87eafbe20",
+    "source_policy": "Pin the immutable canonical Harness commit containing the accepted O14 Fast profile.",
     "model_weights_included": false
   },
   "profiles": {
@@ -38,8 +38,8 @@
       },
       "source": {
         "repository": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark",
-        "url": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark/tree/main",
-        "commit": null,
+        "url": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark/tree/9ba54db8f7c852eabb90372f7dcf47f87eafbe20",
+        "commit": "9ba54db8f7c852eabb90372f7dcf47f87eafbe20",
         "dockerfile": "docker/Dockerfile.repro",
         "checksum_manifest": "SHA256SUMS"
       },

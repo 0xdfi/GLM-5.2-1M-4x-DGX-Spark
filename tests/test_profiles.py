@@ -26,6 +26,7 @@ class ProfileIndexTests(unittest.TestCase):
         self.assertEqual(fast["capacity"]["max_model_len"], 249000)
         self.assertEqual(fast["capacity"]["max_num_seqs"], 4)
         self.assertEqual(fast["capacity"]["max_num_batched_tokens"], 2048)
+        self.assertEqual(fast["source"]["commit"], "9ba54db8f7c852eabb90372f7dcf47f87eafbe20")
         self.assertEqual(fast["matched_speed"]["prefill_tokens_per_second"], 819)
         self.assertEqual(fast["matched_speed"]["decode_peak_tokens_per_second"], 42.3)
         self.assertEqual(fast["matched_speed"]["deep_decode_tokens_per_second_range"], [29, 33])
